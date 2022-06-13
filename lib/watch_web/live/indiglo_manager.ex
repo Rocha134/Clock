@@ -29,7 +29,6 @@ defmodule WatchWeb.IndigloManager do
   end
 
   def handle_info(:OnStateTrans, %{st: AlarmOn, ui_pid: ui, counter: counter} = state) do
-    IO.inspect(counter)
     GenServer.cast(ui, :set_indiglo)
     if (counter < 5) do
       if counter > 0 do
@@ -44,7 +43,6 @@ defmodule WatchWeb.IndigloManager do
   end
 
   def handle_info(:OffStateTrans, %{st: AlarmOff, ui_pid: ui, counter: counter} = state) do
-    IO.inspect(counter)
     GenServer.cast(ui, :unset_indiglo)
     counter = counter + 1
     if (counter < 5) do
@@ -56,7 +54,19 @@ defmodule WatchWeb.IndigloManager do
     end
   end
 
-  def handle_info(_event, state) do
+  def handle_info(:resume_clock, %{counter: counter, st: st, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"bottom-right", %{counter: counter, st: st, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"top-left", %{counter: counter, st: st, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"top-right", %{counter: counter, st: st, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"bottom-left", %{counter: counter, st: st, ui_pid: ui} = state) do
     {:noreply, state}
   end
 end

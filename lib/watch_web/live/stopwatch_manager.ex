@@ -44,8 +44,19 @@ defmodule WatchWeb.StopwatchManager do
     # IO.inspect(count)
     {:noreply, state |> Map.put(:count, count)}
   end
-
-  def handle_info(_event, state) do
+  def handle_info(:resume_clock, %{count: count, mode: mode, st1: st1, st2: st2, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"bottom-right", %{count: count, mode: mode, st1: st1, st2: st2, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"bottom-left", %{count: count, mode: mode, st1: st1, st2: st2, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:"top-right", %{count: count, mode: mode, st1: st1, st2: st2, ui_pid: ui} = state) do
+    {:noreply, state}
+  end
+  def handle_info(:counting_counting, %{count: count, mode: mode, st1: st1, st2: st2, ui_pid: ui} = state) do
     {:noreply, state}
   end
 end
