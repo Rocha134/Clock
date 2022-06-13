@@ -1,51 +1,42 @@
-defmodule WatchWeb.StopwatchManager do
-  use GenServer
+defmodule WatchWeb.WatchLive do
+  use WatchWeb, :live_view
 
-  def init(ui) do
-    :gproc.reg({:p, :l, :ui_event})
-    GenServer.cast(ui, {:set_time_display, "00:00.00" })
-    {:ok, %{ui_pid: ui, count: ~T[00:00:00.00], st1: Working, st2: Paused, mode: Time}}
+  def mount(_params, _session, socket) do
+    GenServer.start_link(WatchWeb.ClockManager, self())
+    GenServer.start_link(WatchWeb.StopwatchManager, self())
+    GenServer.start_link(WatchWeb.IndigloManager, self())
+    {:ok, assign(socket, time: "12:00:00", indiglo: "white")}
   end
 
-  # ----------------------------------------------------
-  #  Working --- bottom-left/count = 0; set_time_display() ----> Working
-  # ----------------------------------------------------
-  def handle_info(:"bottom-left", %{ui_pid: ui, st1: Working, mode: SWatch} = state) do
-    GenServer.cast(ui, {:set_time_display, "00:00.00" })
-    {:noreply, %{state | count: ~T[00:00:00.00]}}
+  def render(assigns) do
+    ~L"""
+    <svg width="220" height="220" style="border-radius: 10px;">
+      <image xlink:href="/images/watch.gif"></image>
+      <rect phx-click="top-left" x="2" y="60" width="12" height="12" stroke="#b4f837" stroke-width="1", fill="transparent" />
+      <rect phx-click="bottom-left" x="2" y="160" width="12" height="12" stroke="#b4f837" stroke-width="1", fill="transparent" />
+      <rect phx-click="top-right" x="207" y="58" width="12" height="12" stroke="#b4f837" stroke-width="1", fill="transparent" />
+      <rect phx-click="bottom-right" x="209" y="160" width="12" height="12" stroke="#b4f837" stroke-width="1", fill="transparent" />
+      <rect x="52" y="100" width="120" height="50" style="fill:<%= @indiglo %>" />
+
+      <text x="73" y="135" font-family="monospace" font-size="18px" fill="black" font-weight="bold" xml:space="preserve"><%= @time %></text>
+    </svg>
+    """
+  end
+  def handle_event(event, _payload, socket) do
+    IO.inspect event
+    :gproc.send({:p, :l, :ui_event}, String.to_atom(event))
+    {:noreply, socket}
   end
 
-  def handle_info(:"top-left", %{st1: Working, mode: SWatch} = state) do
-    {:noreply, %{state | mode: Time}}
+  def handle_cast({:set_time_display, str}, socket) do
+    {:noreply, assign(socket, time: str)}
   end
 
-  def handle_info(:"top-left", %{ui_pid: ui, st1: Working, mode: Time, count: count} = state) do
-    GenServer.cast(ui, {:set_time_display, Time.truncate(count, :millisecond) |> Time.to_string  |> String.slice(3, 8)})
-    {:noreply, %{state | mode: SWatch}}
+  def handle_cast(:set_indiglo, socket) do
+    {:noreply, assign(socket, indiglo: "#b4f837")}
   end
 
-  ###################################################################
-
-  def handle_info(:"bottom-right", %{st2: Paused, mode: SWatch} = state) do
-    Process.send_after(self(), :counting_counting, 10)
-    {:noreply, state |> Map.put(:st2, Counting)}
-  end
-
-  def handle_info(:"bottom-right", %{st2: Counting, mode: SWatch} = state) do
-    {:noreply, state |> Map.put(:st2, Paused)}
-  end
-
-  def handle_info(:counting_counting, %{st2: Counting, ui_pid: ui, count: count, mode: mode} = state) do
-    Process.send_after(self(), :counting_counting, 10)
-    count = Time.add(count, 10, :millisecond)
-    if mode == SWatch do
-      GenServer.cast(ui, {:set_time_display, Time.truncate(count, :millisecond) |> Time.to_string  |> String.slice(3, 8) })
-    end
-    # IO.inspect(count)
-    {:noreply, state |> Map.put(:count, count)}
-  end
-
-  def handle_info(_event, state) do
-    {:noreply, state}
+  def handle_cast(:unset_indiglo, socket) do
+    {:noreply, assign(socket, indiglo: "white")}
   end
 end
